@@ -17,10 +17,20 @@ namespace Moudou.DBStructureReader
         public IEnumerable<TableInfo> GetSchema(string connectionNameOrString)
         {
             var reader = new SqlServerSchemaReader();
-            DataTable dt = reader.ReadColumnSchemas(connectionNameOrString);
+            DataTable dtColumnSchema = reader.ReadColumnSchemas(connectionNameOrString);
+            DataTable dtKeySchema = reader.ReadKeySchemas(connectionNameOrString);
+
+            var dicKeySchema = dtKeySchema.AsEnumerable().Select(dr => 
+                new { 
+                    TableName = dr["TABLE_NAME"] as string,
+                    ColumnName = dr["COLUMN_NAME"] as string,
+                    IsPK = (dr["IsPK"] as int? ?? 0) > 0,
+                    IsUK = (dr["IsUK"] as int? ?? 0) > 0,
+                    IsFK = (dr["IsFK"] as int? ?? 0) > 0
+                }).ToDictionary(x => $"{x.TableName}_{x.ColumnName}".ToLower(), x => x);
 
             var dic = new Dictionary<string, TableInfo>();
-            foreach (DataRow dr in dt.Rows)
+            foreach (DataRow dr in dtColumnSchema.Rows)
             {
                 var tableName = dr.Field<string>("TABLE_NAME");
                 var columnName = dr.Field<string>("COLUMN_NAME");
@@ -28,8 +38,9 @@ namespace Moudou.DBStructureReader
                 var columnType = dr.Field<string>("DATA_TYPE");
                 var textLength = dr.Field<int?>("CHARACTER_MAXIMUM_LENGTH");
                 var numericPrecision = dr.Field<byte?>("NUMERIC_PRECISION");
-                var numericScale = dr.Field<int?>("NUMERIC_SCALE");
+                var numericScale = dr.Field<int?>("NUMERIC_SCALE") ?? 0;
                 var columnDefault = dr.Field<string>("COLUMN_DEFAULT");
+                var isIdentity = dr.Field<int>("IsIdentity") > 0;
 
                 if (!dic.ContainsKey(tableName))
                     dic.Add(tableName, new TableInfo(tableName));
@@ -39,8 +50,18 @@ namespace Moudou.DBStructureReader
                     Name = columnName,
                     ColumnType = columnType,
                     Length = textLength,
+                    IsIdentity = isIdentity,
                     IsNullable = (string.Compare("YES", isNullable, true) == 0)
                 };
+
+                string tableColumnName = $"{tableName}_{columnName}".ToLower();
+                if (dicKeySchema.ContainsKey(tableColumnName))
+                {
+                    var obj = dicKeySchema[tableColumnName];
+                    col.IsUniqueKey = obj.IsUK;
+                    col.IsPrimaryKey = obj.IsPK;
+                    col.IsForignKey = obj.IsFK;
+                }
 
                 dic[tableName].ColumnInfos.Add(col);
             }
