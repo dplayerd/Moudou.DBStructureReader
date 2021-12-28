@@ -11,6 +11,37 @@ namespace Moudou.DBStructureReader
     /// <summary> 資料庫結構讀取器 </summary>
     public class DBSchemaReader
     {
+        private static Dictionary<string, string> _dicTypeMapping = new Dictionary<string, string>()
+        {
+            { "bigint", "long" },
+            { "binary", "byte[]" },
+            { "bit", "Boolean" },
+            { "char", "string" },
+            { "datetime", "Datetime" },
+            { "decimal", "decimal" },
+            { "float", "double" },
+            { "image", "byte[]" },
+            { "int", "int" },
+            { "money", "decimal" },
+            { "nchar", "string" },
+            { "ntext", "string" },
+            { "numeric", "decimal" },
+            { "nvarchar", "string" },
+            { "real", "single" },
+            { "rowversion", "byte[]" },
+            { "smalldatetime", "Datetime" },
+            { "smallint", "short" },
+            { "smallmoney", "decimal" },
+            { "text", "string" },
+            { "time", "TimeSpan" },
+            { "timestamp", "byte[]" },
+            { "tinyint", "byte" },
+            { "uniqueidentifier", "Guid" },
+            { "varbinary", "byte[]" },
+            { "varchar", "string" },
+            { "xml", "Xml" },
+        };
+
         /// <summary> 讀取結構 </summary>
         /// <param name="connectionNameOrString"></param>
         /// <returns></returns>
@@ -20,8 +51,9 @@ namespace Moudou.DBStructureReader
             DataTable dtColumnSchema = reader.ReadColumnSchemas(connectionNameOrString);
             DataTable dtKeySchema = reader.ReadKeySchemas(connectionNameOrString);
 
-            var dicKeySchema = dtKeySchema.AsEnumerable().Select(dr => 
-                new { 
+            var dicKeySchema = dtKeySchema.AsEnumerable().Select(dr =>
+                new
+                {
                     TableName = dr["TABLE_NAME"] as string,
                     ColumnName = dr["COLUMN_NAME"] as string,
                     IsPK = (dr["IsPK"] as int? ?? 0) > 0,
@@ -54,6 +86,9 @@ namespace Moudou.DBStructureReader
                     IsNullable = (string.Compare("YES", isNullable, true) == 0)
                 };
 
+                // 取得 .net 格式
+                col.DotNetType = GetDotNetType(columnType);
+
                 string tableColumnName = $"{tableName}_{columnName}".ToLower();
                 if (dicKeySchema.ContainsKey(tableColumnName))
                 {
@@ -67,6 +102,17 @@ namespace Moudou.DBStructureReader
             }
 
             return dic.Values;
+        }
+
+        /// <summary> 取得 .net 用欄位型別 </summary>
+        /// <param name="columnType"> 資料庫型別 </param>
+        /// <returns></returns>
+        private static string GetDotNetType(string columnType)
+        {
+            string typeName = columnType.ToLower();
+            if (!DBSchemaReader._dicTypeMapping.ContainsKey(typeName))
+                return "string";
+            return DBSchemaReader._dicTypeMapping[typeName];
         }
     }
 }

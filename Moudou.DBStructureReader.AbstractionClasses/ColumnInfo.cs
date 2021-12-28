@@ -15,6 +15,9 @@ namespace Moudou.DBStructureReader.AbstractionClasses
         /// <summary> 欄位型別 </summary>
         public string ColumnType { get; set; }
 
+        /// <summary> 在 .NET 中對應的型別 </summary>
+        public string DotNetType { get; set; } = "string";
+
         /// <summary> 是否為自動增號 </summary>
         public bool IsIdentity { get; set; }
 
