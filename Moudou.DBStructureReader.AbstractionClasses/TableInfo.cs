@@ -18,6 +18,9 @@ namespace Moudou.DBStructureReader.AbstractionClasses
         /// <summary> 表格名稱 </summary>
         public string Name { get; set; }
 
+        /// <summary> 表格描述 </summary>
+        public string Desc { get; set; }
+
         /// <summary> 欄位集合 </summary>
         public List<ColumnInfo> ColumnInfos { get; set; }
     }

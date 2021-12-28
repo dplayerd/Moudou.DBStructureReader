@@ -11,11 +11,13 @@ namespace Moudou.DBStructureReader
     /// <summary> 資料庫結構讀取器 </summary>
     public class DBSchemaReader
     {
+        private static string[] _nullableDotNetType = { "string", "byte[]" };
+
         private static Dictionary<string, string> _dicTypeMapping = new Dictionary<string, string>()
         {
             { "bigint", "long" },
             { "binary", "byte[]" },
-            { "bit", "Boolean" },
+            { "bit", "bool" },
             { "char", "string" },
             { "datetime", "Datetime" },
             { "decimal", "decimal" },
@@ -87,7 +89,7 @@ namespace Moudou.DBStructureReader
                 };
 
                 // 取得 .net 格式
-                col.DotNetType = GetDotNetType(columnType);
+                col.DotNetType = GetDotNetType(col);
 
                 string tableColumnName = $"{tableName}_{columnName}".ToLower();
                 if (dicKeySchema.ContainsKey(tableColumnName))
@@ -105,14 +107,26 @@ namespace Moudou.DBStructureReader
         }
 
         /// <summary> 取得 .net 用欄位型別 </summary>
-        /// <param name="columnType"> 資料庫型別 </param>
+        /// <param name="col"> 資料庫型別 </param>
         /// <returns></returns>
-        private static string GetDotNetType(string columnType)
+        private static string GetDotNetType(ColumnInfo col)
         {
-            string typeName = columnType.ToLower();
+            string typeName = col.ColumnType.ToLower();
             if (!DBSchemaReader._dicTypeMapping.ContainsKey(typeName))
                 return "string";
-            return DBSchemaReader._dicTypeMapping[typeName];
+
+            var dotnetType = DBSchemaReader._dicTypeMapping[typeName];
+            if (_nullableDotNetType.Contains(dotnetType))
+            {
+                return dotnetType;
+            }
+            else
+            {
+                if (col.IsNullable)
+                    return dotnetType + "?";
+                else
+                    return dotnetType;
+            }
         }
     }
 }

@@ -35,5 +35,8 @@ namespace Moudou.DBStructureReader.AbstractionClasses
 
         /// <summary> 是否允許空值 </summary>
         public bool IsNullable { get; set; }
+
+        /// <summary> 欄位描述 </summary>
+        public string ColumnDesc { get; set; }
     }
 }
